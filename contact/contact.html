@@ -154,6 +154,114 @@
       </div>
       <img src="images/67458626b5e4d09934e89980_curve-bg-10.svg" loading="lazy" alt="" class="feature-curve-bottom-bg">
     </section>
+    <section class="auth-section">
+      <div class="auth-form" style="max-width: 400px; margin: 2rem auto; padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px;">
+        <h3>Login/Signup</h3>
+        <input type="email" id="auth-email" placeholder="Email" style="width: 100%; padding: 0.5rem; margin: 0.5rem 0;">
+        <span id="verified-badge" style="display: none; color: green; font-weight: bold; margin-left: 0.5rem;">✓ Verified</span>
+        <input type="password" id="auth-password" placeholder="Password" style="width: 100%; padding: 0.5rem; margin: 0.5rem 0;">
+        <div id="verify-email-notice" style="display: none; padding: 0.5rem; background: #fff8e1; border-radius: 4px; margin-top: 1rem;">
+          Please verify your email address (check your inbox)
+          <button id="resend-verification" style="margin-left: 0.5rem; padding: 0.25rem 0.5rem;">Resend</button>
+        </div>
+        <div id="auth-message" style="margin-top: 1rem; color: red;"></div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button id="login-btn" style="flex: 1; padding: 0.5rem;">Login</button>
+          <button id="signup-btn" style="flex: 1; padding: 0.5rem;">Sign Up</button>
+        </div>
+        <button id="google-signin" style="width: 100%; background: #4285F4; color: white; padding: 0.5rem; margin: 0.5rem 0; border: none; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" style="height: 20px; margin-right: 10px;">
+          Sign in with Google
+        </button>
+        <button id="google-signin" style="width: 100%; background: #4285F4; color: white; padding: 0.5rem; margin: 0.5rem 0; border: none; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" style="height: 20px; margin-right: 10px;">
+          Sign in with Google
+        </button>
+        <a href="#" id="reset-password" style="display: block; text-align: center; margin-top: 0.5rem;">
+          Forgot Password?
+        </a>
+      </div>
+      <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          // Google Sign-In handler
+          document.getElementById('google-signin').addEventListener('click', async () => {
+            try {
+              await authService.signInWithGoogle();
+              document.getElementById('auth-message').textContent = 'Google sign-in successful!';
+              document.getElementById('auth-message').style.color = 'green';
+            } catch (error) {
+              document.getElementById('auth-message').textContent = error.message;
+              document.getElementById('auth-message').style.color = 'red';
+            }
+          });
+          // Resend verification handler
+          document.getElementById('resend-verification').addEventListener('click', async () => {
+            try {
+              await authService.sendVerificationEmail();
+              document.getElementById('auth-message').textContent = 'Verification email resent!';
+              document.getElementById('auth-message').style.color = 'green';
+            } catch (error) {
+              document.getElementById('auth-message').textContent = error.message;
+              document.getElementById('auth-message').style.color = 'red';
+            }
+          });
+          // Auth state listener
+          auth.onAuthStateChanged(user => {
+            const verifyNotice = document.getElementById('verify-email-notice');
+            const verifiedBadge = document.getElementById('verified-badge');
+            
+            if (user) {
+              verifyNotice.style.display = user.emailVerified ? 'none' : 'block';
+              verifiedBadge.style.display = user.emailVerified ? 'inline' : 'none';
+            } else {
+              verifyNotice.style.display = 'none';
+              verifiedBadge.style.display = 'none';
+            }
+          });
+          // Password reset handler
+          document.getElementById('reset-password').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value || prompt('Enter your email:');
+            if (email) {
+              try {
+                await authService.sendPasswordReset(email);
+                document.getElementById('auth-message').textContent = 'Password reset email sent!';
+                document.getElementById('auth-message').style.color = 'green';
+              } catch (error) {
+                document.getElementById('auth-message').textContent = error.message;
+                document.getElementById('auth-message').style.color = 'red';
+              }
+            }
+          });
+          // Login handler
+          document.getElementById('login-btn').addEventListener('click', async () => {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            try {
+              await authService.loginUser(email, password);
+              document.getElementById('auth-message').textContent = 'Login successful!';
+              document.getElementById('auth-message').style.color = 'green';
+            } catch (error) {
+              document.getElementById('auth-message').textContent = error.message;
+              document.getElementById('auth-message').style.color = 'red';
+            }
+          });
+          // Signup handler
+          document.getElementById('signup-btn').addEventListener('click', async () => {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            try {
+              await authService.registerUser(email, password, email.split('@')[0]);
+              document.getElementById('auth-message').textContent = 'Registration successful!';
+              document.getElementById('auth-message').style.color = 'green';
+            } catch (error) {
+              document.getElementById('auth-message').textContent = error.message;
+              document.getElementById('auth-message').style.color = 'red';
+            }
+          });
+        });
+      </script>
+    </section>
     <section class="footer-section">
       <div class="container">
         <div class="w-layout-grid footer-grid">
