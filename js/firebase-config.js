@@ -1,18 +1,26 @@
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAmRdHLYvWTStPsoWVG_DlkO5du3ahY6-Q",
+  authDomain: "happy-tots-day-care.firebaseapp.com",
+  projectId: "happy-tots-day-care",
+  storageBucket: "happy-tots-day-care.appspot.com",
+  messagingSenderId: "870240273343",
+  appId: "1:870240273343:web:2c19be7acacef4a7c1970a"
 };
 
 // Initialize Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
-const storage = firebase.storage();
+let app;
+try {
+  app = firebase.initializeApp(firebaseConfig);
+} catch (err) {
+  console.error("Firebase initialization error", err);
+  throw new Error("Failed to initialize Firebase");
+}
+
+const db = firebase.firestore(); // Note: This uses the namespaced API. Consider the modular SDK for newer apps!
+const auth = firebase.auth();     // Note: This uses the namespaced API. Consider the modular SDK for newer apps!
+const storage = firebase.storage(); // Note: This uses the namespaced API. Consider the modular SDK for newer apps!
+
 
 // Firestore collections reference
 const collections = {
@@ -25,7 +33,7 @@ const collections = {
 // Export services
 window.firebaseServices = {
   db,
-  auth, 
+  auth,
   storage,
   collections
 };
