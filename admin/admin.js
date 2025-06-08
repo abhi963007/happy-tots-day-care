@@ -11,7 +11,7 @@
       }
       return;
     }
-
+    
     const authInstance = firebaseServices.auth;
     const db = firebaseServices.db;
     
@@ -198,24 +198,12 @@
       
       enquiriesContainer.innerHTML = '<h3>Contact Form Submissions</h3>';
       
-      // Make sure the user is authorized - create a test enquiry if needed for testing
+      // Skip the test data creation, just check permissions
       try {
         // Try to get the collections (will fail if permissions aren't set up)
         let testSnapshot = await db.collection(firebaseServices.collections.ENQUIRIES).limit(1).get();
-        
-        // If no enquiries exist and this is a test account, create a sample one
-        if (testSnapshot.empty && (user.email === 'admin@example.com' || user.email === 'abhiramak963@gmail.com')) {
-          console.log('Creating test enquiry for demo purposes');
-          await db.collection(firebaseServices.collections.ENQUIRIES).add({
-            name: 'Test User',
-            email: 'test@example.com',
-            childAge: '4',
-            message: 'This is a test submission for demo purposes.',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
-        }
       } catch (err) {
-        console.warn('Could not access or create test enquiries:', err);
+        console.warn('Could not access enquiries:', err);
         enquiriesContainer.innerHTML += `<p>Error: Insufficient permissions to access enquiries. 
           This is likely due to Firebase security rules. Please make sure the current user (${user.email}) 
           has proper permissions set in Firebase Console.</p>`;
@@ -353,6 +341,23 @@
       const row = document.querySelector(`tr[data-id="${docId}"]`);
       if (row) row.remove();
       alert('Enquiry deleted successfully');
+      
+      // Update stats after deletion
+      const statsContainer = document.getElementById('user-stats');
+      if (statsContainer) {
+        try {
+          const enquiriesCount = await firebaseServices.db.collection(firebaseServices.collections.ENQUIRIES).get()
+            .then(snapshot => snapshot.size);
+          
+          // Update just the enquiries count
+          const enquiriesCountElement = statsContainer.querySelector('.stat-card:first-child .stat-number');
+          if (enquiriesCountElement) {
+            enquiriesCountElement.textContent = enquiriesCount;
+          }
+        } catch (e) {
+          console.error('Could not update stats after deletion:', e);
+        }
+      }
     } catch (error) {
       console.error('Error deleting enquiry:', error);
       alert('Error deleting enquiry: ' + error.message);
