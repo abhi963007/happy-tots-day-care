@@ -1,0 +1,10 @@
+/* Custom styles for Happy Tots Day Care */
+
+/* Hide Webflow badge */
+.w-webflow-badge {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  z-index: -9999 !important;
+} 
