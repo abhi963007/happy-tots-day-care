@@ -1,12 +1,12 @@
-# Firebase Deployment Instructions
+# Firebase Deployment Guide
 
-This document provides instructions on how to deploy the Happy Tots Day Care website to Firebase Hosting.
+This guide will help you deploy the Happy Tots Day Care website to Firebase Hosting and set up Firebase Firestore database with proper security rules.
 
 ## Prerequisites
 
-1. Node.js installed (version 14 or higher)
-2. Firebase CLI installed (`npm install -g firebase-tools`)
-3. Firebase account with access to the project
+1. Node.js and npm installed on your machine
+2. Firebase CLI installed: `npm install -g firebase-tools`
+3. A Firebase project created in the [Firebase Console](https://console.firebase.google.com/)
 
 ## Deployment Steps
 
@@ -16,18 +16,15 @@ This document provides instructions on how to deploy the Happy Tots Day Care web
 firebase login
 ```
 
-This will open a browser window to authenticate with your Google account.
+### 2. Initialize Firebase (Skip if already initialized)
 
-### 2. Initialize Firebase (if not already done)
-
-The project already includes the necessary Firebase configuration files:
-- `firebase.json` - Configuration for Firebase services
-- `.firebaserc` - Project association
+This project is already configured with:
+- `firebase.json` - Configuration for hosting and Firestore
+- `.firebaserc` - Project ID configuration
 - `firestore.rules` - Security rules for Firestore
 - `firestore.indexes.json` - Indexes for Firestore queries
-- `storage.rules` - Security rules for Storage
 
-### 3. Deploy the Website
+### 3. Deploy the Website and Rules
 
 ```bash
 firebase deploy
@@ -35,44 +32,52 @@ firebase deploy
 
 This will deploy:
 - The website to Firebase Hosting
-- Security rules to Firestore
-- Indexes to Firestore
-- Security rules to Storage
+- Firestore security rules
+- Firestore indexes
 
-To deploy only specific features:
+### 4. Deploy Only Specific Features
 
+To deploy only hosting:
 ```bash
-# Deploy only hosting
 firebase deploy --only hosting
-
-# Deploy only Firestore rules
-firebase deploy --only firestore:rules
-
-# Deploy only Storage rules
-firebase deploy --only storage
 ```
 
-### 4. Verify Deployment
+To deploy only Firestore rules:
+```bash
+firebase deploy --only firestore:rules
+```
 
-After deployment, the CLI will provide a URL where the site is hosted:
-https://happy-tots-day-care-ab4c5.web.app
+To deploy only Firestore indexes:
+```bash
+firebase deploy --only firestore:indexes
+```
+
+## Security Rules
+
+The Firestore security rules are configured to:
+- Allow anyone to create enquiries (for the contact form)
+- Allow only admin users to read, update, and delete enquiries
+- Allow users to read/write their own data
+
+## Admin Access
+
+For development and testing, the following email addresses are automatically granted admin privileges:
+- admin@example.com
+- abhiramak963@gmail.com
+
+In a production environment, you should use Firebase Authentication custom claims to properly assign admin roles. This requires setting up a Firebase Cloud Function or using the Firebase Admin SDK.
 
 ## Troubleshooting
 
-### Common Issues
+If you encounter permission issues:
+1. Make sure your security rules are deployed: `firebase deploy --only firestore:rules`
+2. Verify you're logged in with an admin account (admin@example.com or abhiramak963@gmail.com)
+3. Check the browser console for specific error messages
 
-1. **Permission denied**: Make sure you're logged in with an account that has sufficient permissions for the project.
-
-2. **Build errors**: If you've made changes to the codebase, ensure there are no syntax errors.
-
-3. **Firestore rules deployment fails**: Validate your rules using the Firebase Console before deploying.
-
-### Getting Help
-
-For additional help:
-- Firebase documentation: https://firebase.google.com/docs
-- Firebase CLI documentation: https://firebase.google.com/docs/cli
-- Firebase Hosting documentation: https://firebase.google.com/docs/hosting
+For "Missing or insufficient permissions" errors:
+- Ensure the user is authenticated
+- Verify the user's email matches one of the admin emails
+- Check if the security rules are properly deployed
 
 ## Maintenance
 

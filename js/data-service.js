@@ -13,7 +13,8 @@ const dataService = {
       const timestamp = firebase.firestore.FieldValue.serverTimestamp();
       const docData = {
         ...data,
-        createdAt_server: timestamp
+        createdAt: timestamp,  // Standard timestamp
+        createdAt_server: timestamp  // Keep for backward compatibility
       };
       
       // Add the document with add() method
@@ -61,9 +62,10 @@ const dataService = {
       }
       
       // Add updated timestamp
+      const timestamp = firebase.firestore.FieldValue.serverTimestamp();
       const updateData = {
         ...data,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        updatedAt: timestamp
       };
       
       await firebaseServices.db

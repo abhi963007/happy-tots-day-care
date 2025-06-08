@@ -5,7 +5,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "createdAt_server",
+          "fieldPath": "createdAt",
           "order": "DESCENDING"
         }
       ]

@@ -62,6 +62,19 @@
           try {
             await authInstance.createUserWithEmailAndPassword('admin@example.com', 'admin123');
             console.log('Created demo admin user');
+            
+            // Also create a user document in Firestore for this admin
+            try {
+              await db.collection('users').doc(authInstance.currentUser.uid).set({
+                email: 'admin@example.com',
+                role: 'admin',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+              console.log('Created admin user document in Firestore');
+            } catch (err) {
+              console.log('Could not create user document, might already exist:', err);
+            }
+            
           } catch (e) {
             // User might already exist, which is fine
             console.log('Demo user might already exist:', e.message);
@@ -163,10 +176,10 @@
       if (adminContent) adminContent.style.display = 'block';
       
       // Load enquiries
-      await loadEnquiries(db);
+      await loadEnquiries(db, user);
       
       // Load user stats
-      await loadUserStats(db);
+      await loadUserStats(db, user);
       
     } catch (error) {
       console.error('Error loading admin dashboard:', error);
@@ -178,69 +191,104 @@
   }
   
   // Load enquiries from Firestore
-  async function loadEnquiries(db) {
+  async function loadEnquiries(db, user) {
     try {
       const enquiriesContainer = document.getElementById('enquiries-container');
       if (!enquiriesContainer) return;
       
       enquiriesContainer.innerHTML = '<h3>Contact Form Submissions</h3>';
       
-      // Get enquiries collection
-      const enquiriesSnapshot = await db.collection(firebaseServices.collections.ENQUIRIES)
-        .orderBy('createdAt', 'desc')
-        .limit(20)
-        .get();
-      
-      if (enquiriesSnapshot.empty) {
-        enquiriesContainer.innerHTML += '<p>No submissions yet.</p>';
+      // Make sure the user is authorized - create a test enquiry if needed for testing
+      try {
+        // Try to get the collections (will fail if permissions aren't set up)
+        let testSnapshot = await db.collection(firebaseServices.collections.ENQUIRIES).limit(1).get();
+        
+        // If no enquiries exist and this is a test account, create a sample one
+        if (testSnapshot.empty && (user.email === 'admin@example.com' || user.email === 'abhiramak963@gmail.com')) {
+          console.log('Creating test enquiry for demo purposes');
+          await db.collection(firebaseServices.collections.ENQUIRIES).add({
+            name: 'Test User',
+            email: 'test@example.com',
+            childAge: '4',
+            message: 'This is a test submission for demo purposes.',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+      } catch (err) {
+        console.warn('Could not access or create test enquiries:', err);
+        enquiriesContainer.innerHTML += `<p>Error: Insufficient permissions to access enquiries. 
+          This is likely due to Firebase security rules. Please make sure the current user (${user.email}) 
+          has proper permissions set in Firebase Console.</p>`;
         return;
       }
       
-      // Create table
-      let tableHTML = `
-        <table class="enquiries-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Child Age</th>
-              <th>Message</th>
-              <th>Actions</th>
+      // Get enquiries collection
+      try {
+        const enquiriesSnapshot = await db.collection(firebaseServices.collections.ENQUIRIES)
+          .orderBy('createdAt', 'desc')
+          .limit(20)
+          .get();
+        
+        if (enquiriesSnapshot.empty) {
+          enquiriesContainer.innerHTML += '<p>No submissions yet.</p>';
+          return;
+        }
+        
+        // Create table
+        let tableHTML = `
+          <table class="enquiries-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Child Age</th>
+                <th>Message</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+        
+        // Add rows
+        enquiriesSnapshot.forEach(doc => {
+          const data = doc.data();
+          let date = 'Unknown';
+          
+          try {
+            date = data.createdAt && data.createdAt.toDate ? 
+                  new Date(data.createdAt.toDate()).toLocaleString() : 
+                  data.createdAt ? new Date(data.createdAt).toLocaleString() : 'Unknown';
+          } catch (e) {
+            console.warn('Error formatting date:', e);
+          }
+          
+          tableHTML += `
+            <tr data-id="${doc.id}">
+              <td>${date}</td>
+              <td>${data.name || 'N/A'}</td>
+              <td>${data.email || 'N/A'}</td>
+              <td>${data.childAge || 'N/A'}</td>
+              <td class="message-cell">${data.message || 'N/A'}</td>
+              <td>
+                <button class="delete-btn" onclick="deleteEnquiry('${doc.id}')">Delete</button>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-      `;
-      
-      // Add rows
-      enquiriesSnapshot.forEach(doc => {
-        const data = doc.data();
-        const date = data.createdAt_server ? new Date(data.createdAt_server.toDate()).toLocaleString() : 
-                   data.createdAt ? new Date(data.createdAt).toLocaleString() : 'Unknown';
+          `;
+        });
         
         tableHTML += `
-          <tr data-id="${doc.id}">
-            <td>${date}</td>
-            <td>${data.name || 'N/A'}</td>
-            <td>${data.email || 'N/A'}</td>
-            <td>${data.childAge || 'N/A'}</td>
-            <td class="message-cell">${data.message || 'N/A'}</td>
-            <td>
-              <button class="delete-btn" onclick="deleteEnquiry('${doc.id}')">Delete</button>
-            </td>
-          </tr>
+            </tbody>
+          </table>
         `;
-      });
-      
-      tableHTML += `
-          </tbody>
-        </table>
-      `;
-      
-      enquiriesContainer.innerHTML += tableHTML;
-      
+        
+        enquiriesContainer.innerHTML += tableHTML;
+      } catch (error) {
+        console.error('Error loading enquiries:', error);
+        enquiriesContainer.innerHTML += '<p>Error loading submissions: ' + error.message + '</p>';
+      }
     } catch (error) {
-      console.error('Error loading enquiries:', error);
+      console.error('Error in loadEnquiries function:', error);
       const enquiriesContainer = document.getElementById('enquiries-container');
       if (enquiriesContainer) {
         enquiriesContainer.innerHTML += '<p>Error loading submissions: ' + error.message + '</p>';
@@ -249,38 +297,44 @@
   }
   
   // Load user statistics
-  async function loadUserStats(db) {
+  async function loadUserStats(db, user) {
     try {
       const statsContainer = document.getElementById('user-stats');
       if (!statsContainer) return;
       
-      // Count enquiries
-      const enquiriesCount = await db.collection(firebaseServices.collections.ENQUIRIES).get()
-        .then(snapshot => snapshot.size);
-      
-      // Count users (if you have user collection)
-      let usersCount = 0;
       try {
-        usersCount = await db.collection(firebaseServices.collections.USERS).get()
+        // Count enquiries
+        const enquiriesCount = await db.collection(firebaseServices.collections.ENQUIRIES).get()
           .then(snapshot => snapshot.size);
-      } catch (e) {
-        console.log('No users collection or access denied');
+        
+        // Count users (if you have user collection)
+        let usersCount = 0;
+        try {
+          usersCount = await db.collection(firebaseServices.collections.USERS).get()
+            .then(snapshot => snapshot.size);
+        } catch (e) {
+          console.log('No users collection or access denied');
+        }
+        
+        // Display stats
+        statsContainer.innerHTML = `
+          <div class="stat-card">
+            <h3>Enquiries</h3>
+            <p class="stat-number">${enquiriesCount}</p>
+          </div>
+          <div class="stat-card">
+            <h3>Users</h3>
+            <p class="stat-number">${usersCount}</p>
+          </div>
+        `;
+      } catch (error) {
+        console.error('Error fetching statistics:', error);
+        statsContainer.innerHTML = `<p>Error: Insufficient permissions to access statistics. 
+          This is likely due to Firebase security rules. Please make sure the current user (${user.email}) 
+          has proper permissions set in Firebase Console.</p>`;
       }
-      
-      // Display stats
-      statsContainer.innerHTML = `
-        <div class="stat-card">
-          <h3>Enquiries</h3>
-          <p class="stat-number">${enquiriesCount}</p>
-        </div>
-        <div class="stat-card">
-          <h3>Users</h3>
-          <p class="stat-number">${usersCount}</p>
-        </div>
-      `;
-      
     } catch (error) {
-      console.error('Error loading user stats:', error);
+      console.error('Error in loadUserStats function:', error);
       const statsContainer = document.getElementById('user-stats');
       if (statsContainer) {
         statsContainer.innerHTML = '<p>Error loading statistics: ' + error.message + '</p>';
