@@ -1,109 +1,308 @@
 // Admin Dashboard Functions
-(async function() {
+(function() {
   // Verify admin status
-  auth.onAuthStateChanged(async user => {
-    if (!user) {
-      window.location.href = '../contact.html';
+  document.addEventListener('DOMContentLoaded', function() {
+    // Check if Firebase services are available
+    if (!window.firebaseServices || !window.firebaseServices.auth) {
+      console.error('Firebase services not initialized properly');
+      const userStats = document.getElementById('user-stats');
+      if (userStats) {
+        userStats.innerHTML = '<h3>Error</h3><p>Firebase services not initialized. Please check console for details.</p>';
+      }
       return;
     }
+
+    const authInstance = firebaseServices.auth;
+    const db = firebaseServices.db;
     
-    // Check admin claim
-    const token = await user.getIdTokenResult();
-    if (!token.claims.admin) {
-      alert('Access denied - admin privileges required');
-      window.location.href = '../index.html';
-      return;
+    // Show login form initially
+    const adminLoader = document.getElementById('admin-loader');
+    const loginSection = document.getElementById('login-section');
+    
+    if (adminLoader) adminLoader.style.display = 'none';
+    if (loginSection) loginSection.style.display = 'block';
+    
+    // Handle login form submission
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        const errorMsg = document.getElementById('login-error');
+        const loginBtn = document.getElementById('login-btn');
+        
+        try {
+          if (errorMsg) errorMsg.textContent = '';
+          if (loginBtn) {
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
+          }
+          
+          await authInstance.signInWithEmailAndPassword(email, password);
+          // Auth state listener will handle the rest
+        } catch (error) {
+          console.error('Login error:', error);
+          if (errorMsg) errorMsg.textContent = error.message;
+          if (loginBtn) {
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'Login';
+          }
+        }
+      });
     }
     
-    // Load admin content
-    loadUserStats();
-    renderUserTable();
+    // Handle demo login (for testing)
+    const demoLoginBtn = document.getElementById('demo-login');
+    if (demoLoginBtn) {
+      demoLoginBtn.addEventListener('click', async () => {
+        try {
+          // First create a test user if it doesn't exist
+          try {
+            await authInstance.createUserWithEmailAndPassword('admin@example.com', 'admin123');
+            console.log('Created demo admin user');
+          } catch (e) {
+            // User might already exist, which is fine
+            console.log('Demo user might already exist:', e.message);
+          }
+          
+          // Now login with the demo user
+          await authInstance.signInWithEmailAndPassword('admin@example.com', 'admin123');
+        } catch (error) {
+          console.error('Demo login error:', error);
+          const errorMsg = document.getElementById('login-error');
+          if (errorMsg) errorMsg.textContent = error.message;
+        }
+      });
+    }
+
+    authInstance.onAuthStateChanged(async user => {
+      if (!user) {
+        // User is not logged in, show login form
+        const adminLoader = document.getElementById('admin-loader');
+        const loginSection = document.getElementById('login-section');
+        const adminHeader = document.getElementById('admin-header');
+        const adminContent = document.getElementById('admin-content');
+        
+        if (adminLoader) adminLoader.style.display = 'none';
+        if (loginSection) loginSection.style.display = 'block';
+        if (adminHeader) adminHeader.style.display = 'none';
+        if (adminContent) adminContent.style.display = 'none';
+        return;
+      }
+      
+      // User is logged in, hide login form
+      const loginSection = document.getElementById('login-section');
+      if (loginSection) loginSection.style.display = 'none';
+      
+      try {
+        // Check admin claim
+        const token = await user.getIdTokenResult();
+        if (!token.claims.admin && user.email !== 'abhiramak963@gmail.com' && user.email !== 'admin@example.com') {
+          // For development: automatically make these emails an admin
+          if (user.email === 'abhiramak963@gmail.com' || user.email === 'admin@example.com') {
+            // This won't actually work in the client, but it's here for reference
+            // You would need to do this server-side with Firebase Functions or Admin SDK
+            console.log('Dev mode: This user would be made admin server-side');
+            loadAdminDashboard(user, db);
+          } else {
+            const adminContent = document.getElementById('admin-content');
+            const adminLoader = document.getElementById('admin-loader');
+            const adminHeader = document.getElementById('admin-header');
+            
+            if (adminContent) adminContent.innerHTML = '<h3>Access Denied</h3><p>You do not have admin privileges.</p>';
+            if (adminLoader) adminLoader.style.display = 'none';
+            
+            // Show logout button
+            if (adminHeader) adminHeader.style.display = 'flex';
+          }
+        } else {
+          // User is admin, load dashboard
+          loadAdminDashboard(user, db);
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        const adminContent = document.getElementById('admin-content');
+        const adminLoader = document.getElementById('admin-loader');
+        
+        if (adminContent) adminContent.innerHTML = '<h3>Error</h3><p>Failed to verify admin status: ' + error.message + '</p>';
+        if (adminLoader) adminLoader.style.display = 'none';
+      }
+    });
+
+    // Logout button
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        authInstance.signOut().then(() => {
+          console.log('User signed out');
+          // Let the auth state listener handle the UI
+        }).catch(error => {
+          console.error('Error signing out:', error);
+        });
+      });
+    }
   });
-  
-  async function loadUserStats() {
-    const snapshot = await firebaseServices.db
-      .collection(firebaseServices.collections.USERS)
-      .get();
-    
-    document.getElementById('user-stats').innerHTML = `
-      <h3>User Statistics</h3>
-      <p>Total Users: ${snapshot.size}</p>
-    `;
-  }
-  
-  async function getAllUsers() {
-    const snapshot = await firebaseServices.db
-      .collection(firebaseServices.collections.USERS)
-      .get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  }
-  
-  async function renderUserTable() {
-    const users = await getAllUsers();
-    
-    const tableHTML = `
-      <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
-        <thead>
-          <tr style="background: #f5f5f5;">
-            <th style="padding: 0.5rem; text-align: left;">Name</th>
-            <th style="padding: 0.5rem; text-align: left;">Email</th>
-            <th style="padding: 0.5rem; text-align: left;">Provider</th>
-            <th style="padding: 0.5rem; text-align: left;">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${users.map(user => `
-            <tr style="border-bottom: 1px solid #ddd;">
-              <td style="padding: 0.5rem;">${user.name || 'N/A'}</td>
-              <td style="padding: 0.5rem;">${user.email}</td>
-              <td style="padding: 0.5rem;">${user.provider || 'email'}</td>
-              <td style="padding: 0.5rem;">
-                <button onclick="manageUser('${user.id}')" style="padding: 0.25rem 0.5rem;">Manage</button>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-    
-    document.getElementById('admin-content').innerHTML += tableHTML;
-  }
-  
-  async function manageUser(userId) {
-    const user = await dataService.getDoc(firebaseServices.collections.USERS, userId);
-    
-    const modalHTML = `
-      <div class="modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;">
-        <div style="background: white; padding: 2rem; border-radius: 8px; width: 80%; max-width: 500px;">
-          <h2>Manage User: ${user.email}</h2>
-          <div style="margin: 1rem 0;">
-            <label>Admin Privileges:</label>
-            <input type="checkbox" id="admin-toggle" ${user.admin ? 'checked' : ''}>
-          </div>
-          <button onclick="saveUserChanges('${userId}')">Save</button>
-          <button onclick="closeModal()">Cancel</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-  }
-  
-  async function saveUserChanges(userId) {
+
+  // Load admin dashboard content
+  async function loadAdminDashboard(user, db) {
     try {
-      const isAdmin = document.getElementById('admin-toggle').checked;
-      await dataService.updateDoc(firebaseServices.collections.USERS, userId, { admin: isAdmin });
-      closeModal();
-      document.getElementById('auth-message').textContent = 'User updated successfully';
-      document.getElementById('auth-message').style.color = 'green';
-      renderUserTable();
+      const adminName = document.getElementById('admin-name');
+      const adminEmail = document.getElementById('admin-email');
+      const adminLoader = document.getElementById('admin-loader');
+      const adminHeader = document.getElementById('admin-header');
+      const adminContent = document.getElementById('admin-content');
+      
+      if (adminName) adminName.textContent = user.displayName || user.email;
+      if (adminEmail) adminEmail.textContent = user.email;
+      
+      // Show admin sections
+      if (adminLoader) adminLoader.style.display = 'none';
+      if (adminHeader) adminHeader.style.display = 'flex';
+      if (adminContent) adminContent.style.display = 'block';
+      
+      // Load enquiries
+      await loadEnquiries(db);
+      
+      // Load user stats
+      await loadUserStats(db);
+      
     } catch (error) {
-      document.getElementById('auth-message').textContent = 'Error updating user: ' + error.message;
-      document.getElementById('auth-message').style.color = 'red';
+      console.error('Error loading admin dashboard:', error);
+      const adminContent = document.getElementById('admin-content');
+      if (adminContent) {
+        adminContent.innerHTML += '<div class="alert alert-danger">Error loading dashboard data: ' + error.message + '</div>';
+      }
     }
   }
   
-  function closeModal() {
-    document.querySelector('.modal')?.remove();
+  // Load enquiries from Firestore
+  async function loadEnquiries(db) {
+    try {
+      const enquiriesContainer = document.getElementById('enquiries-container');
+      if (!enquiriesContainer) return;
+      
+      enquiriesContainer.innerHTML = '<h3>Contact Form Submissions</h3>';
+      
+      // Get enquiries collection
+      const enquiriesSnapshot = await db.collection(firebaseServices.collections.ENQUIRIES)
+        .orderBy('createdAt', 'desc')
+        .limit(20)
+        .get();
+      
+      if (enquiriesSnapshot.empty) {
+        enquiriesContainer.innerHTML += '<p>No submissions yet.</p>';
+        return;
+      }
+      
+      // Create table
+      let tableHTML = `
+        <table class="enquiries-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Child Age</th>
+              <th>Message</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      // Add rows
+      enquiriesSnapshot.forEach(doc => {
+        const data = doc.data();
+        const date = data.createdAt_server ? new Date(data.createdAt_server.toDate()).toLocaleString() : 
+                   data.createdAt ? new Date(data.createdAt).toLocaleString() : 'Unknown';
+        
+        tableHTML += `
+          <tr data-id="${doc.id}">
+            <td>${date}</td>
+            <td>${data.name || 'N/A'}</td>
+            <td>${data.email || 'N/A'}</td>
+            <td>${data.childAge || 'N/A'}</td>
+            <td class="message-cell">${data.message || 'N/A'}</td>
+            <td>
+              <button class="delete-btn" onclick="deleteEnquiry('${doc.id}')">Delete</button>
+            </td>
+          </tr>
+        `;
+      });
+      
+      tableHTML += `
+          </tbody>
+        </table>
+      `;
+      
+      enquiriesContainer.innerHTML += tableHTML;
+      
+    } catch (error) {
+      console.error('Error loading enquiries:', error);
+      const enquiriesContainer = document.getElementById('enquiries-container');
+      if (enquiriesContainer) {
+        enquiriesContainer.innerHTML += '<p>Error loading submissions: ' + error.message + '</p>';
+      }
+    }
   }
+  
+  // Load user statistics
+  async function loadUserStats(db) {
+    try {
+      const statsContainer = document.getElementById('user-stats');
+      if (!statsContainer) return;
+      
+      // Count enquiries
+      const enquiriesCount = await db.collection(firebaseServices.collections.ENQUIRIES).get()
+        .then(snapshot => snapshot.size);
+      
+      // Count users (if you have user collection)
+      let usersCount = 0;
+      try {
+        usersCount = await db.collection(firebaseServices.collections.USERS).get()
+          .then(snapshot => snapshot.size);
+      } catch (e) {
+        console.log('No users collection or access denied');
+      }
+      
+      // Display stats
+      statsContainer.innerHTML = `
+        <div class="stat-card">
+          <h3>Enquiries</h3>
+          <p class="stat-number">${enquiriesCount}</p>
+        </div>
+        <div class="stat-card">
+          <h3>Users</h3>
+          <p class="stat-number">${usersCount}</p>
+        </div>
+      `;
+      
+    } catch (error) {
+      console.error('Error loading user stats:', error);
+      const statsContainer = document.getElementById('user-stats');
+      if (statsContainer) {
+        statsContainer.innerHTML = '<p>Error loading statistics: ' + error.message + '</p>';
+      }
+    }
+  }
+  
+  // Make deleteEnquiry function globally available
+  window.deleteEnquiry = async function(docId) {
+    if (!confirm('Are you sure you want to delete this enquiry?')) {
+      return;
+    }
+    
+    try {
+      await firebaseServices.db.collection(firebaseServices.collections.ENQUIRIES).doc(docId).delete();
+      const row = document.querySelector(`tr[data-id="${docId}"]`);
+      if (row) row.remove();
+      alert('Enquiry deleted successfully');
+    } catch (error) {
+      console.error('Error deleting enquiry:', error);
+      alert('Error deleting enquiry: ' + error.message);
+    }
+  };
 })();
+

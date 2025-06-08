@@ -4,24 +4,214 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | Happy Tots</title>
-  <link rel="stylesheet" href="../css/webflow.css">
+  <link rel="stylesheet" href="../css/kidjoyplan.webflow.b79d10245.css">
   <style>
-    .admin-container { padding: 2rem; }
-    .stat-card { background: white; border-radius: 8px; padding: 1rem; margin: 1rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .admin-container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .admin-content { margin-top: 2rem; }
+    .admin-user { display: flex; align-items: center; }
+    .admin-user-info { margin-left: 1rem; }
+    .btn-logout { padding: 0.5rem 1rem; background: #ff6b6b; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    
+    .stats-container { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { flex: 1; min-width: 200px; background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .stat-card h3 { margin-top: 0; color: #333; }
+    .stat-number { font-size: 2rem; font-weight: bold; margin: 0; color: #4a6cf7; }
+    
+    .enquiries-table { width: 100%; border-collapse: collapse; margin-top: 1rem; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .enquiries-table th { background: #f7f7f7; padding: 0.75rem; text-align: left; border-bottom: 1px solid #ddd; }
+    .enquiries-table td { padding: 0.75rem; border-bottom: 1px solid #eee; }
+    .enquiries-table tr:last-child td { border-bottom: none; }
+    .message-cell { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .delete-btn { padding: 0.25rem 0.5rem; background: #ff6b6b; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    
+    .admin-loader { display: flex; justify-content: center; padding: 3rem; }
+    .loader { border: 5px solid #f3f3f3; border-top: 5px solid #4a6cf7; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    /* Login styles */
+    #login-section {
+      display: none;
+      max-width: 400px;
+      margin: 2rem auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    #login-section h2 {
+      margin-top: 0;
+      text-align: center;
+      color: #4a6cf7;
+      margin-bottom: 1.5rem;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    #login-btn {
+      width: 100%;
+      padding: 0.75rem;
+      background: #4a6cf7;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    #login-error {
+      color: #ff6b6b;
+      margin-top: 1rem;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    .demo-login-container {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+    #demo-login {
+      background: none;
+      border: none;
+      color: #4a6cf7;
+      text-decoration: underline;
+      cursor: pointer;
+      padding: 0;
+    }
+    
+    /* Navigation styles */
+    .site-nav {
+      background-color: #f8f9fa;
+      padding: 1rem 0;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid #eee;
+    }
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 1rem;
+    }
+    .site-logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #333;
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .nav-links li {
+      margin-left: 1.5rem;
+    }
+    .nav-links a {
+      color: #333;
+      text-decoration: none;
+      padding: 0.5rem 0;
+    }
+    .nav-links a:hover {
+      color: #4a6cf7;
+    }
+    .nav-links a.active {
+      color: #4a6cf7;
+      font-weight: 500;
+    }
+    
+    @media (max-width: 768px) {
+      .enquiries-table th:nth-child(4), .enquiries-table td:nth-child(4) { display: none; }
+      .enquiries-table th:nth-child(5), .enquiries-table td:nth-child(5) { display: none; }
+    }
   </style>
 </head>
 <body>
+  <nav class="site-nav">
+    <div class="nav-container">
+      <a href="../index.html" class="site-logo">Happy Tots Day Care</a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../about/about.html">About</a></li>
+        <li><a href="../contact/contact.html">Contact</a></li>
+        <li><a href="index.html" class="active">Admin</a></li>
+      </ul>
+    </div>
+  </nav>
+
   <div class="admin-container">
     <h1>Admin Dashboard</h1>
-    <div class="stat-cards">
-      <div class="stat-card" id="user-stats">
-        <h3>User Statistics</h3>
-        <p>Loading...</p>
+    
+    <div id="login-section">
+      <h2>Admin Login</h2>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" required>
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" required>
+        </div>
+        <button type="submit" id="login-btn">Login</button>
+      </form>
+      <p id="login-error"></p>
+      <div class="demo-login-container">
+        <p>For testing purposes:</p>
+        <button id="demo-login">Use Demo Account</button>
+      </div>
+    </div>
+    
+    <div id="admin-loader" class="admin-loader">
+      <div class="loader"></div>
+    </div>
+    
+    <div id="admin-header" class="admin-header" style="display: none;">
+      <div class="admin-user">
+        <div class="admin-user-info">
+          <h3 id="admin-name">Admin User</h3>
+          <p id="admin-email">admin@example.com</p>
+        </div>
+      </div>
+      <button id="logout-btn" class="btn-logout">Logout</button>
+    </div>
+    
+    <div id="admin-content" style="display: none;">
+      <div id="user-stats" class="stats-container">
+        <!-- Stats will be loaded here -->
+      </div>
+      
+      <div id="enquiries-container">
+        <!-- Enquiries will be loaded here -->
       </div>
     </div>
   </div>
+  
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-storage-compat.js"></script>
 
+  <!-- App JavaScript -->
   <script src="../js/firebase-config.js"></script>
+  <script src="../js/data-service.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/debug.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>

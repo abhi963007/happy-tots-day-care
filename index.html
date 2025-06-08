@@ -60,6 +60,7 @@
           <a href="contact/contact.html" class="nav-link-button mobile-nav-link">Contact</a>
           <a href="blog/blog.html" class="nav-link-button mobile-nav-link">Blog</a>
           <a href="team/team.html" class="nav-link-button mobile-nav-link">Team</a>
+          <a href="admin/index.html" class="nav-link-button mobile-nav-link">Admin</a>
         </nav>
         <div class="menu-button w-nav-button">
           <div class="icon w-icon-nav-menu"></div>
@@ -139,7 +140,7 @@
             <div class="feature-box">
               <h3 class="feature-title">Engaging Learning in a Nurturing Environment</h3>
               <div class="space-small-xs"></div>
-              <div class="feature-description">We foster a supportive, innovative learning space where your child’s curiosity can thrive, making education both fun and effective.</div>
+              <div class="feature-description">We foster a supportive, innovative learning space where your child's curiosity can thrive, making education both fun and effective.</div>
             </div>
           </div>
         </div>
@@ -195,7 +196,7 @@
           <h2 class="section-title">What We Offer</h2>
         </div>
         <div class="space-medium"></div>
-        <div data-w-id="3d6a0f35-09b2-f98c-adc1-31ab31dc2240" style="opacity:0" class="section-description dark-color">Our programs provide a holistic learning experience designed to nurture every child’s growth and curiosity. From sensory play for infants to structured preschool lessons.</div>
+        <div data-w-id="3d6a0f35-09b2-f98c-adc1-31ab31dc2240" style="opacity:0" class="section-description dark-color">Our programs provide a holistic learning experience designed to nurture every child's growth and curiosity. From sensory play for infants to structured preschool lessons.</div>
         <div class="space-large"></div>
         <div class="w-layout-grid services-grid">
           <div data-w-id="3575ed6c-c6ef-2a14-21ee-728fd928b0ee" style="opacity:0" class="service-wrap">
@@ -281,7 +282,7 @@
               <div class="space-small-xs"></div>
               <h4 class="program-subtitle">0-2 years</h4>
               <div class="space-small-xs"></div>
-              <div class="program-description">A nurturing environment designed for your infant’s first steps into the world of learning. Our program focuses on sensory play, early communication skills,.</div>
+              <div class="program-description">A nurturing environment designed for your infant's first steps into the world of learning. Our program focuses on sensory play, early communication skills,.</div>
             </div>
             <img src="images/67458626b5e4d09934e89920_sun.svg" loading="lazy" data-w-id="1685fc26-cb5a-ea8c-d3b2-9196ba553ee5" alt="" class="about-sun">
           </div>
@@ -308,7 +309,7 @@
               <div class="space-small-xs"></div>
               <h4 class="program-subtitle">4-6 years</h4>
               <div class="space-small-xs"></div>
-              <div class="program-description">Our preschool program is designed to meet your child’s developmental needs, focusing on early literacy, numeracy, and problem-solving skills.</div>
+              <div class="program-description">Our preschool program is designed to meet your child's developmental needs, focusing on early literacy, numeracy, and problem-solving skills.</div>
             </div>
             <img src="images/67458626b5e4d09934e89952_rocket.svg" loading="lazy" alt="" class="rocket">
           </div>
@@ -495,7 +496,7 @@
           <h2 class="section-title">What Parents Say</h2>
         </div>
         <div class="space-medium"></div>
-        <div data-w-id="2d83d563-f57e-7e39-eb97-d32d9333ff08" style="opacity:0" class="section-description">Don’t just take our word for it! Hear from parents who have seen their children blossom through our programs. From improved social skills to enhanced learning abilities.</div>
+        <div data-w-id="2d83d563-f57e-7e39-eb97-d32d9333ff08" style="opacity:0" class="section-description">Don't just take our word for it! Hear from parents who have seen their children blossom through our programs. From improved social skills to enhanced learning abilities.</div>
         <div class="space-large"></div>
         <div data-delay="4000" data-animation="slide" class="slider w-slider" data-autoplay="true" data-easing="ease" style="opacity:0" data-hide-arrows="false" data-disable-swipe="false" data-w-id="5fa51b0c-9933-19cd-2e66-0fbde740f39a" data-autoplay-limit="0" data-nav-spacing="3" data-duration="500" data-infinite="true">
           <img src="images/67458626b5e4d09934e8995f_kid-flag.svg" loading="lazy" data-w-id="c34f5dd6-fbaf-6d12-11ed-254aba020c68" alt="" class="kid-flag">
@@ -623,7 +624,7 @@
                     </div>
                   </div>
                   <div class="space-small-xs"></div>
-                  <div class="paragraph-text white-color">The Curious Minds program has transformed my toddler into a little learner! They come home every day talking about new stories and activities. It’s the perfect blend of fun and education.</div>
+                  <div class="paragraph-text white-color">The Curious Minds program has transformed my toddler into a little learner! They come home every day talking about new stories and activities. It's the perfect blend of fun and education.</div>
                 </div>
                 <img src="images/67458626b5e4d09934e8995d_review-arrow-green.svg" loading="lazy" alt="" class="review-arrow">
                 <div class="testimonial-client">
@@ -1353,15 +1354,68 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-storage-compat.js"></script>
 
     <!-- Your Firebase config -->
-    <script src="/js/firebase-config.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/data-service.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/debug.js"></script>
 
     <!-- Initialize Firebase services -->
     <script>
       document.addEventListener('DOMContentLoaded', function() {
         try {
           // Check if Firebase is initialized
-          if (typeof firebase !== 'undefined') {
+          if (typeof firebase !== 'undefined' && firebase.app) {
             console.log('Firebase services initialized successfully');
+            
+            // Set up contact form submission if on home page
+            const contactForm = document.getElementById('wf-form-Contact-Us-Form');
+            if (contactForm) {
+              contactForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                try {
+                  const name = document.getElementById('Contact-Us-Name-2').value;
+                  const age = document.getElementById('Contact-Us-Age-2').value;
+                  const email = document.getElementById('Contact-Us-Email-2').value;
+                  const message = document.getElementById('Contact-Message-2').value;
+                  
+                  await dataService.createDoc(firebaseServices.collections.ENQUIRIES, {
+                    name,
+                    childAge: age,
+                    email,
+                    message
+                  });
+                  
+                  // Show success message
+                  contactForm.style.display = 'none';
+                  document.querySelector('.w-form-done').style.display = 'block';
+                } catch (error) {
+                  console.error('Form submission error:', error);
+                  document.querySelector('.w-form-fail').style.display = 'block';
+                }
+              });
+            }
+            
+            // Set up newsletter form submission
+            const newsletterForm = document.getElementById('email-form');
+            if (newsletterForm) {
+              newsletterForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                try {
+                  const email = document.getElementById('name-2').value;
+                  
+                  await dataService.createDoc('newsletter', { email });
+                  
+                  // Show success message
+                  newsletterForm.style.display = 'none';
+                  newsletterForm.nextElementSibling.style.display = 'block';
+                } catch (error) {
+                  console.error('Newsletter submission error:', error);
+                  newsletterForm.nextElementSibling.nextElementSibling.style.display = 'block';
+                }
+              });
+            }
           }
         } catch (e) {
           console.error('Firebase initialization error:', e);

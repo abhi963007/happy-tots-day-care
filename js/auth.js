@@ -1,10 +1,10 @@
 // Authentication Service
-const auth = firebaseServices.auth;
+const authInstance = firebaseServices.auth;
 
 // User Registration
 async function registerUser(email, password, name) {
   try {
-    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+    const userCredential = await authInstance.createUserWithEmailAndPassword(email, password);
     await firebaseServices.db.collection(firebaseServices.collections.USERS)
       .doc(userCredential.user.uid)
       .set({ name, email, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
@@ -22,7 +22,7 @@ async function registerUser(email, password, name) {
 // User Login
 async function loginUser(email, password) {
   try {
-    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+    const userCredential = await authInstance.signInWithEmailAndPassword(email, password);
     return userCredential.user;
   } catch (error) {
     console.error('Login error:', error);
@@ -33,7 +33,7 @@ async function loginUser(email, password) {
 // Password Reset
 async function sendPasswordReset(email) {
   try {
-    await auth.sendPasswordResetEmail(email);
+    await authInstance.sendPasswordResetEmail(email);
     return true;
   } catch (error) {
     console.error('Password reset error:', error);
@@ -44,7 +44,7 @@ async function sendPasswordReset(email) {
 // Email Verification
 async function sendVerificationEmail() {
   try {
-    await auth.currentUser.sendEmailVerification();
+    await authInstance.currentUser.sendEmailVerification();
     return true;
   } catch (error) {
     console.error('Verification email error:', error);
@@ -56,7 +56,7 @@ async function sendVerificationEmail() {
 async function signInWithGoogle() {
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
-    const result = await auth.signInWithPopup(provider);
+    const result = await authInstance.signInWithPopup(provider);
     
     // Check if new user
     if (result.additionalUserInfo.isNewUser) {
