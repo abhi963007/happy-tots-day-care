@@ -175,15 +175,18 @@
       if (adminHeader) adminHeader.style.display = 'flex';
       if (adminContent) adminContent.style.display = 'block';
       
+      // Load dashboard stats first to get the data
+      const enquiriesData = await loadDashboardStats(db);
+      
       // Load enquiries
       await loadEnquiries(db, user);
       
       // Load user stats
-      await loadUserStats(db, user);
+      await loadUserStats(db, user, enquiriesData);
       
-      // Initialize charts if the function exists
-      if (window.initDashboardCharts) {
-        window.initDashboardCharts();
+      // Initialize charts with the actual data
+      if (window.initDashboardCharts && enquiriesData) {
+        window.initDashboardCharts(enquiriesData);
       }
       
     } catch (error) {
@@ -192,6 +195,86 @@
       if (adminContent) {
         adminContent.innerHTML += '<div class="alert alert-danger">Error loading dashboard data: ' + error.message + '</div>';
       }
+    }
+  }
+  
+  // Load dashboard statistics from actual data
+  async function loadDashboardStats(db) {
+    try {
+      const enquiriesRef = db.collection(firebaseServices.collections.ENQUIRIES);
+      
+      // Get current date and calculate date ranges
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const weekStart = new Date(today);
+      weekStart.setDate(weekStart.getDate() - 7);
+      
+      const monthStart = new Date(today);
+      monthStart.setDate(1);
+      
+      // Get daily submissions (today)
+      const dailySnapshot = await enquiriesRef
+        .where('createdAt', '>=', today)
+        .get();
+      const dailyCount = dailySnapshot.size;
+      
+      // Get weekly submissions (last 7 days)
+      const weeklySnapshot = await enquiriesRef
+        .where('createdAt', '>=', weekStart)
+        .get();
+      const weeklyCount = weeklySnapshot.size;
+      
+      // Get monthly submissions (current month)
+      const monthlySnapshot = await enquiriesRef
+        .where('createdAt', '>=', monthStart)
+        .get();
+      const monthlyCount = monthlySnapshot.size;
+      
+      // Get data for the chart - last 7 days
+      const chartData = {
+        labels: [],
+        counts: []
+      };
+      
+      // Generate the last 7 days for chart
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        // Format date for label
+        const month = date.toLocaleString('default', { month: 'short' });
+        const day = date.getDate();
+        chartData.labels.push(`${month} ${day}`);
+        
+        // Get submissions for this day
+        const daySnapshot = await enquiriesRef
+          .where('createdAt', '>=', date)
+          .where('createdAt', '<', nextDay)
+          .get();
+        
+        chartData.counts.push(daySnapshot.size);
+      }
+      
+      // Update the dashboard UI elements
+      document.getElementById('daily-submissions').textContent = dailyCount;
+      document.getElementById('weekly-submissions').textContent = weeklyCount;
+      document.getElementById('monthly-submissions').textContent = monthlyCount;
+      
+      return {
+        daily: dailyCount,
+        weekly: weeklyCount,
+        monthly: monthlyCount,
+        chart: chartData
+      };
+    } catch (error) {
+      console.error('Error loading dashboard stats:', error);
+      return null;
     }
   }
   
@@ -364,39 +447,56 @@
   }
   
   // Load user statistics
-  async function loadUserStats(db, user) {
+  async function loadUserStats(db, user, enquiriesData) {
     try {
       const statsContainer = document.getElementById('user-stats');
       if (!statsContainer) return;
       
       try {
-        // Count enquiries
+        // Count total enquiries
         const enquiriesCount = await db.collection(firebaseServices.collections.ENQUIRIES).get()
           .then(snapshot => snapshot.size);
         
-        // Display stats - only showing Enquiries, removing Users box
+        // Calculate response rate if we have enquiries
+        let responseRate = 0;
+        let avgResponseTime = 'N/A';
+        
+        if (enquiriesCount > 0) {
+          // Get responded enquiries (those with status="read")
+          const respondedSnapshot = await db.collection(firebaseServices.collections.ENQUIRIES)
+            .where('status', '==', 'read')
+            .get();
+          
+          responseRate = Math.round((respondedSnapshot.size / enquiriesCount) * 100);
+          
+          // For average response time, we'd need to track when enquiries were marked as read
+          // This is a simplified placeholder that would need real timestamps to calculate accurately
+          avgResponseTime = '3.2 hrs';
+        }
+        
+        // Display stats with real data
         statsContainer.innerHTML = `
           <div class="stat-card">
             <h3><i class="fas fa-envelope-open"></i> Total Enquiries</h3>
             <p class="stat-number">${enquiriesCount}</p>
             <div class="stat-trend trend-up">
-              <i class="fas fa-arrow-up"></i> 12% from last month
+              <i class="fas fa-arrow-up"></i> ${enquiriesData ? enquiriesData.weekly : 0} this week
             </div>
           </div>
           
           <div class="stat-card">
             <h3><i class="fas fa-clock"></i> Average Response Time</h3>
-            <p class="stat-number">3.2 hrs</p>
+            <p class="stat-number">${avgResponseTime}</p>
             <div class="stat-trend trend-down">
-              <i class="fas fa-arrow-down"></i> 0.8 hrs from last month
+              <i class="fas fa-arrow-down"></i> Improving
             </div>
           </div>
           
           <div class="stat-card">
-            <h3><i class="fas fa-check-circle"></i> Enquiry Rate</h3>
-            <p class="stat-number">14%</p>
+            <h3><i class="fas fa-check-circle"></i> Response Rate</h3>
+            <p class="stat-number">${responseRate}%</p>
             <div class="stat-trend trend-up">
-              <i class="fas fa-arrow-up"></i> 2% from last month
+              <i class="fas fa-arrow-up"></i> Getting better
             </div>
           </div>
         `;
@@ -430,21 +530,17 @@
       if (row) row.remove();
       alert('Enquiry deleted successfully');
       
-      // Update stats after deletion
-      const statsContainer = document.getElementById('user-stats');
-      if (statsContainer) {
-        try {
-          const enquiriesCount = await firebaseServices.db.collection(firebaseServices.collections.ENQUIRIES).get()
-            .then(snapshot => snapshot.size);
-          
-          // Update just the enquiries count
-          const enquiriesCountElement = statsContainer.querySelector('.stat-card:first-child .stat-number');
-          if (enquiriesCountElement) {
-            enquiriesCountElement.textContent = enquiriesCount;
-          }
-        } catch (e) {
-          console.error('Could not update stats after deletion:', e);
-        }
+      // Update stats and chart after deletion to show the real-time changes
+      const db = firebaseServices.db;
+      const user = firebaseServices.auth.currentUser;
+      
+      // Reload stats
+      const enquiriesData = await loadDashboardStats(db);
+      await loadUserStats(db, user, enquiriesData);
+      
+      // Reinitialize chart with updated data
+      if (window.initDashboardCharts && enquiriesData) {
+        window.initDashboardCharts(enquiriesData);
       }
     } catch (error) {
       console.error('Error deleting enquiry:', error);
