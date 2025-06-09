@@ -831,19 +831,27 @@
       
       // Initialize chart if the dashboard is loaded
       // This function will be called from admin.js when the dashboard is ready
-      window.initDashboardCharts = function() {
+      window.initDashboardCharts = function(enquiriesData) {
         const ctxChart = document.getElementById('submissions-chart');
         if (!ctxChart) return;
         
-        // Create chart with placeholder data
-        // Real data would come from Firebase queries
+        // Use real data if available, otherwise fallback to placeholder data
+        let labels = ['Jun 1', 'Jun 2', 'Jun 3', 'Jun 4', 'Jun 5', 'Jun 6', 'Jun 7'];
+        let data = [2, 5, 3, 7, 4, 6, 2];
+        
+        if (enquiriesData && enquiriesData.chart) {
+          labels = enquiriesData.chart.labels;
+          data = enquiriesData.chart.counts;
+        }
+        
+        // Create chart with actual data from Firebase
         const submissionsChart = new Chart(ctxChart, {
           type: 'line',
           data: {
-            labels: ['Jun 1', 'Jun 2', 'Jun 3', 'Jun 4', 'Jun 5', 'Jun 6', 'Jun 7'],
+            labels: labels,
             datasets: [{
               label: 'Submissions',
-              data: [2, 5, 3, 7, 4, 6, 2],
+              data: data,
               backgroundColor: 'rgba(74, 108, 247, 0.2)',
               borderColor: '#4a6cf7',
               borderWidth: 2,
@@ -882,11 +890,6 @@
             }
           }
         });
-        
-        // Set summary values - in a real app these would be real counts
-        document.getElementById('daily-submissions').textContent = '3';
-        document.getElementById('weekly-submissions').textContent = '14';
-        document.getElementById('monthly-submissions').textContent = '42';
       };
     });
   </script>
