@@ -408,40 +408,40 @@
           
         } else {
           // Desktop view - table layout
-          let tableHTML = `
-            <table class="enquiries-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Child Age</th>
+        let tableHTML = `
+          <table class="enquiries-table">
+        <thead>
+              <tr>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Child Age</th>
                   <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-          `;
+                <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        `;
+        
+        // Add rows
+        enquiriesSnapshot.forEach(doc => {
+          const data = doc.data();
+          let date = 'Unknown';
           
-          // Add rows
-          enquiriesSnapshot.forEach(doc => {
-            const data = doc.data();
-            let date = 'Unknown';
-            
-            try {
-              date = data.createdAt && data.createdAt.toDate ? 
-                    new Date(data.createdAt.toDate()).toLocaleString() : 
-                    data.createdAt ? new Date(data.createdAt).toLocaleString() : 'Unknown';
-            } catch (e) {
-              console.warn('Error formatting date:', e);
-            }
+          try {
+            date = data.createdAt && data.createdAt.toDate ? 
+                  new Date(data.createdAt.toDate()).toLocaleString() : 
+                  data.createdAt ? new Date(data.createdAt).toLocaleString() : 'Unknown';
+          } catch (e) {
+            console.warn('Error formatting date:', e);
+          }
             
             // Get or set status - default to 'new'
             const status = data.status || 'new';
             const statusBadge = `<span class="status-badge status-${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
-            
-            tableHTML += `
-              <tr data-id="${doc.id}">
+          
+          tableHTML += `
+            <tr data-id="${doc.id}">
                 <td data-label="Date">${date}</td>
                 <td data-label="Name">${data.name || 'N/A'}</td>
                 <td data-label="Email">${data.email || 'N/A'}</td>
@@ -450,14 +450,14 @@
                 <td data-label="Actions" class="table-actions">
                   <button class="action-btn view-btn" onclick="viewMessageDetails('${doc.id}')"><i class="fas fa-eye"></i> View</button>
                   <button class="action-btn delete-btn" onclick="deleteEnquiry('${doc.id}')"><i class="fas fa-trash"></i> Delete</button>
-                </td>
-              </tr>
-            `;
-          });
-          
-          tableHTML += `
-              </tbody>
-            </table>
+              </td>
+            </tr>
+          `;
+        });
+        
+        tableHTML += `
+        </tbody>
+      </table>
             
             <div class="pagination">
               <button class="page-btn">&laquo;</button>
@@ -466,9 +466,9 @@
               <button class="page-btn">3</button>
               <button class="page-btn">&raquo;</button>
             </div>
-          `;
-          
-          enquiriesContainer.innerHTML += tableHTML;
+    `;
+    
+        enquiriesContainer.innerHTML += tableHTML;
         }
         
         // Add event listeners for filters
@@ -589,8 +589,8 @@
             <div class="stat-trend trend-up">
               <i class="fas fa-arrow-up"></i> Getting better
             </div>
-          </div>
-        `;
+      </div>
+    `;
       } catch (error) {
         console.error('Error fetching statistics:', error);
         statsContainer.innerHTML = `<p>Error: Insufficient permissions to access statistics. 
@@ -610,33 +610,291 @@
   window.loadEnquiries = loadEnquiries;
   
   // Make deleteEnquiry function globally available
-  window.deleteEnquiry = async function(docId) {
-    if (!confirm('Are you sure you want to delete this enquiry?')) {
-      return;
-    }
-    
+  window.deleteEnquiry = async function(enquiryId) {
     try {
-      await firebaseServices.db.collection(firebaseServices.collections.ENQUIRIES).doc(docId).delete();
-      const row = document.querySelector(`tr[data-id="${docId}"]`);
-      if (row) row.remove();
-      alert('Enquiry deleted successfully');
+      const db = firebase.firestore();
+      const enquiryRef = db.collection(firebaseServices.collections.ENQUIRIES).doc(enquiryId);
       
-      // Update stats and chart after deletion to show the real-time changes
-      const db = firebaseServices.db;
-      const user = firebaseServices.auth.currentUser;
+      // Delete from Firestore
+      await enquiryRef.delete();
       
-      // Reload stats
-      const enquiriesData = await loadDashboardStats(db);
-      await loadUserStats(db, user, enquiriesData);
-      
-      // Reinitialize chart with updated data
-      if (window.initDashboardCharts && enquiriesData) {
-        window.initDashboardCharts(enquiriesData);
+      // Remove from UI if exists
+      const messageElement = document.querySelector(`[data-id="${enquiryId}"]`);
+      if (messageElement) {
+        messageElement.remove();
+        
+        // Check if we need to show empty state
+        const tableBody = document.querySelector('.enquiries-table tbody');
+        const cards = document.querySelector('.submission-cards');
+        
+        if ((tableBody && tableBody.children.length === 0) || 
+            (cards && cards.children.length === 0)) {
+          const enquiriesContainer = document.getElementById('enquiries-container');
+          
+          if (enquiriesContainer) {
+            // Keep the filters but add empty state below them
+            const filtersBar = enquiriesContainer.querySelector('.filters-bar');
+            const content = `
+              <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h4>No submissions</h4>
+                <p>All submissions have been deleted.</p>
+              </div>
+            `;
+            
+            // Remove table or cards
+            if (tableBody) {
+              const table = tableBody.closest('table');
+              if (table) table.remove();
+            }
+            
+            if (cards) {
+              cards.remove();
+            }
+            
+            // Remove pagination
+            const pagination = enquiriesContainer.querySelector('.pagination');
+            if (pagination) pagination.remove();
+            
+            // Add empty state
+            if (filtersBar) {
+              filtersBar.insertAdjacentHTML('afterend', content);
+            } else {
+              enquiriesContainer.insertAdjacentHTML('beforeend', content);
+            }
+          }
+        }
       }
+      
+      // Show success notification
+      showNotification('Message deleted successfully!', 'success');
+      
+      // Refresh stats if available
+      if (typeof updateStats === 'function') {
+        updateStats();
+      }
+      
+      return true;
     } catch (error) {
       console.error('Error deleting enquiry:', error);
-      alert('Error deleting enquiry: ' + error.message);
+      showNotification('Error deleting message: ' + error.message, 'error');
+      throw error;
     }
   };
+
+  // View message details
+  window.viewMessageDetails = async function(messageId) {
+    try {
+      const db = firebase.firestore();
+      const docRef = db.collection(firebaseServices.collections.ENQUIRIES).doc(messageId);
+      const doc = await docRef.get();
+      
+      if (doc.exists) {
+        const data = doc.data();
+        let date = 'Unknown';
+        
+        try {
+          date = data.createdAt && data.createdAt.toDate ? 
+                new Date(data.createdAt.toDate()).toLocaleString() : 
+                data.createdAt ? new Date(data.createdAt).toLocaleString() : 'Unknown';
+        } catch (e) {
+          console.warn('Error formatting date:', e);
+        }
+        
+        // Get or set status - default to 'new'
+        const status = data.status || 'new';
+        
+        // Create responsive modal
+        const modalHTML = `
+          <div class="message-modal">
+            <div class="message-modal-content">
+              <div class="modal-header">
+                <h3>Message Details</h3>
+                <button class="modal-close-btn">&times;</button>
+              </div>
+              
+              <div class="modal-body">
+                <div class="message-detail-row">
+                  <div class="detail-label">Date</div>
+                  <div class="detail-value">${date}</div>
+                </div>
+                
+                <div class="message-detail-row">
+                  <div class="detail-label">Name</div>
+                  <div class="detail-value">${data.name || 'N/A'}</div>
+                </div>
+                
+                <div class="message-detail-row">
+                  <div class="detail-label">Email</div>
+                  <div class="detail-value email-value">
+                    <a href="mailto:${data.email || ''}">${data.email || 'N/A'}</a>
+                  </div>
+                </div>
+                
+                <div class="message-detail-row">
+                  <div class="detail-label">Phone</div>
+                  <div class="detail-value">${data.phone || 'N/A'}</div>
+                </div>
+                
+                <div class="message-detail-row">
+                  <div class="detail-label">Child Age</div>
+                  <div class="detail-value">${data.childAge || 'N/A'}</div>
+                </div>
+                
+                <div class="message-detail-row">
+                  <div class="detail-label">Status</div>
+                  <div class="detail-value">
+                    <select class="status-select">
+                      <option value="new" ${status === 'new' ? 'selected' : ''}>New</option>
+                      <option value="read" ${status === 'read' ? 'selected' : ''}>Read</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div class="message-detail-row full-width">
+                  <div class="detail-label">Message</div>
+                  <div class="detail-value message-content">${data.message || 'N/A'}</div>
+                </div>
+              </div>
+              
+              <div class="modal-footer">
+                <button class="modal-action-btn save-status-btn">Save Status</button>
+                <button class="modal-action-btn delete-message-btn">Delete</button>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Add modal to DOM
+        const modalContainer = document.createElement('div');
+        modalContainer.innerHTML = modalHTML;
+        document.body.appendChild(modalContainer.firstElementChild);
+        
+        // Add event listeners
+        const modal = document.querySelector('.message-modal');
+        const closeBtn = modal.querySelector('.modal-close-btn');
+        const saveStatusBtn = modal.querySelector('.save-status-btn');
+        const deleteBtn = modal.querySelector('.delete-message-btn');
+        const statusSelect = modal.querySelector('.status-select');
+        
+        // Close modal when clicking close button or outside the modal
+        closeBtn.addEventListener('click', () => {
+          document.body.removeChild(modal);
+        });
+        
+        window.addEventListener('click', (event) => {
+          if (event.target === modal) {
+            document.body.removeChild(modal);
+          }
+        });
+        
+        // Save status
+        saveStatusBtn.addEventListener('click', async () => {
+          const newStatus = statusSelect.value;
+          
+          try {
+            await docRef.update({ 
+              status: newStatus,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            // Update UI if message list is visible
+            const messageElement = document.querySelector(`[data-id="${messageId}"]`);
+            if (messageElement) {
+              const statusCell = messageElement.querySelector('[data-label="Status"]') || 
+                                 messageElement.querySelector('.card-status');
+              
+              if (statusCell) {
+                statusCell.innerHTML = `<span class="status-badge status-${newStatus}">${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}</span>`;
+              }
+            }
+            
+            // Show success notification
+            showNotification('Status updated successfully!', 'success');
+            
+            // Close modal
+            document.body.removeChild(modal);
+            
+            // Refresh stats if available
+            if (typeof updateStats === 'function') {
+              updateStats();
+            }
+          } catch (error) {
+            console.error('Error updating status:', error);
+            showNotification('Error updating status: ' + error.message, 'error');
+          }
+        });
+        
+        // Delete message
+        deleteBtn.addEventListener('click', async () => {
+          if (confirm('Are you sure you want to delete this message?')) {
+            try {
+              await deleteEnquiry(messageId);
+              document.body.removeChild(modal);
+            } catch (error) {
+              console.error('Error deleting message:', error);
+              showNotification('Error deleting message: ' + error.message, 'error');
+            }
+          }
+        });
+        
+        // Mark as read if currently new
+        if (status === 'new') {
+          docRef.update({ 
+            status: 'read',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }).then(() => {
+            statusSelect.value = 'read';
+            
+            // Update UI if message list is visible
+            const messageElement = document.querySelector(`[data-id="${messageId}"]`);
+            if (messageElement) {
+              const statusCell = messageElement.querySelector('[data-label="Status"]') ||
+                                 messageElement.querySelector('.card-status');
+              
+              if (statusCell) {
+                statusCell.innerHTML = `<span class="status-badge status-read">Read</span>`;
+              }
+            }
+            
+            // Refresh stats if available
+            if (typeof updateStats === 'function') {
+              updateStats();
+            }
+          }).catch(error => {
+            console.error('Error updating status to read:', error);
+            // No need to show notification for automatic status update
+          });
+        }
+      } else {
+        showNotification('Message not found!', 'error');
+      }
+    } catch (error) {
+      console.error('Error viewing message details:', error);
+      showNotification('Error loading message details: ' + error.message, 'error');
+    }
+  };
+
+  // Helper function to show notifications
+  function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = message;
+    
+    document.body.appendChild(notification);
+    
+    // Fade in
+    setTimeout(() => {
+      notification.classList.add('show');
+    }, 10);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+      notification.classList.remove('show');
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 300); // Wait for fade out animation
+    }, 3000);
+  }
 })();
 
