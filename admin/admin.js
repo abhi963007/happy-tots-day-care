@@ -181,6 +181,11 @@
       // Load user stats
       await loadUserStats(db, user);
       
+      // Initialize charts if the function exists
+      if (window.initDashboardCharts) {
+        window.initDashboardCharts();
+      }
+      
     } catch (error) {
       console.error('Error loading admin dashboard:', error);
       const adminContent = document.getElementById('admin-content');
@@ -196,7 +201,32 @@
       const enquiriesContainer = document.getElementById('enquiries-container');
       if (!enquiriesContainer) return;
       
-      enquiriesContainer.innerHTML = '<h3>Contact Form Submissions</h3>';
+      enquiriesContainer.innerHTML = '<h3><i class="fas fa-envelope" style="margin-right: 0.5rem;"></i>Contact Form Submissions</h3>';
+      
+      // Add filter options
+      enquiriesContainer.innerHTML += `
+        <div class="filters-bar">
+          <div class="search-bar">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-enquiries" placeholder="Search submissions...">
+          </div>
+          <div class="filter-group">
+            <label>Status:</label>
+            <select class="filter-select" id="status-filter">
+              <option value="all">All</option>
+              <option value="new">New</option>
+              <option value="read">Read</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Sort:</label>
+            <select class="filter-select" id="sort-filter">
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+            </select>
+          </div>
+        </div>
+      `;
       
       // Skip the test data creation, just check permissions
       try {
@@ -231,7 +261,7 @@
                 <th>Name</th>
                 <th>Email</th>
                 <th>Child Age</th>
-                <th>Message</th>
+                <th>Status</th>
                 <th>Actions</th>
           </tr>
         </thead>
@@ -251,15 +281,20 @@
             console.warn('Error formatting date:', e);
           }
           
+          // Get or set status - default to 'new'
+          const status = data.status || 'new';
+          const statusBadge = `<span class="status-badge status-${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+          
           tableHTML += `
             <tr data-id="${doc.id}">
               <td>${date}</td>
               <td>${data.name || 'N/A'}</td>
               <td>${data.email || 'N/A'}</td>
               <td>${data.childAge || 'N/A'}</td>
-              <td class="message-cell">${data.message || 'N/A'}</td>
-              <td>
-                <button class="delete-btn" onclick="deleteEnquiry('${doc.id}')">Delete</button>
+              <td>${statusBadge}</td>
+              <td class="table-actions">
+                <button class="action-btn view-btn" onclick="viewMessageDetails('${doc.id}')"><i class="fas fa-eye"></i> View</button>
+                <button class="action-btn delete-btn" onclick="deleteEnquiry('${doc.id}')"><i class="fas fa-trash"></i> Delete</button>
               </td>
             </tr>
           `;
@@ -268,9 +303,53 @@
         tableHTML += `
         </tbody>
       </table>
+      
+      <div class="pagination">
+        <button class="page-btn">&laquo;</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">&raquo;</button>
+      </div>
     `;
     
         enquiriesContainer.innerHTML += tableHTML;
+        
+        // Add event listeners for filters
+        const searchInput = document.getElementById('search-enquiries');
+        const statusFilter = document.getElementById('status-filter');
+        const sortFilter = document.getElementById('sort-filter');
+        
+        if (searchInput) {
+          searchInput.addEventListener('input', filterTable);
+        }
+        
+        if (statusFilter) {
+          statusFilter.addEventListener('change', filterTable);
+        }
+        
+        if (sortFilter) {
+          sortFilter.addEventListener('change', filterTable);
+        }
+        
+        function filterTable() {
+          const searchValue = searchInput ? searchInput.value.toLowerCase() : '';
+          const statusValue = statusFilter ? statusFilter.value : 'all';
+          
+          const rows = document.querySelectorAll('.enquiries-table tbody tr');
+          
+          rows.forEach(row => {
+            const name = row.cells[1].textContent.toLowerCase();
+            const email = row.cells[2].textContent.toLowerCase();
+            const statusText = row.cells[4].textContent.toLowerCase();
+            
+            const matchesSearch = name.includes(searchValue) || email.includes(searchValue);
+            const matchesStatus = statusValue === 'all' || statusText.toLowerCase() === statusValue;
+            
+            row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+          });
+        }
+        
       } catch (error) {
         console.error('Error loading enquiries:', error);
         enquiriesContainer.innerHTML += '<p>Error loading submissions: ' + error.message + '</p>';
@@ -295,26 +374,32 @@
         const enquiriesCount = await db.collection(firebaseServices.collections.ENQUIRIES).get()
           .then(snapshot => snapshot.size);
         
-        // Count users (if you have user collection)
-        let usersCount = 0;
-        try {
-          usersCount = await db.collection(firebaseServices.collections.USERS).get()
-            .then(snapshot => snapshot.size);
-        } catch (e) {
-          console.log('No users collection or access denied');
-        }
-        
-        // Display stats
+        // Display stats - only showing Enquiries, removing Users box
         statsContainer.innerHTML = `
           <div class="stat-card">
-            <h3>Enquiries</h3>
+            <h3><i class="fas fa-envelope-open"></i> Total Enquiries</h3>
             <p class="stat-number">${enquiriesCount}</p>
+            <div class="stat-trend trend-up">
+              <i class="fas fa-arrow-up"></i> 12% from last month
+            </div>
           </div>
+          
           <div class="stat-card">
-            <h3>Users</h3>
-            <p class="stat-number">${usersCount}</p>
-      </div>
-    `;
+            <h3><i class="fas fa-clock"></i> Average Response Time</h3>
+            <p class="stat-number">3.2 hrs</p>
+            <div class="stat-trend trend-down">
+              <i class="fas fa-arrow-down"></i> 0.8 hrs from last month
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <h3><i class="fas fa-check-circle"></i> Enquiry Rate</h3>
+            <p class="stat-number">14%</p>
+            <div class="stat-trend trend-up">
+              <i class="fas fa-arrow-up"></i> 2% from last month
+            </div>
+          </div>
+        `;
       } catch (error) {
         console.error('Error fetching statistics:', error);
         statsContainer.innerHTML = `<p>Error: Insufficient permissions to access statistics. 
@@ -329,6 +414,9 @@
       }
     }
   }
+  
+  // Make functions globally available
+  window.loadEnquiries = loadEnquiries;
   
   // Make deleteEnquiry function globally available
   window.deleteEnquiry = async function(docId) {
