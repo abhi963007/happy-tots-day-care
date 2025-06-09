@@ -8,3 +8,22 @@
   position: absolute !important;
   z-index: -9999 !important;
 } 
+
+/* Center footer copyright text */
+.block-footer-down {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.block-footer-down .copyright {
+  text-align: center;
+  width: 100%;
+  margin-top: 5px;
+}
+
+.block-footer-down .footer-icon-run {
+  margin-bottom: 10px;
+} 
