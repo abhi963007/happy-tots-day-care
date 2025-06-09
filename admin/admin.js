@@ -161,14 +161,9 @@
   // Load admin dashboard content
   async function loadAdminDashboard(user, db) {
     try {
-      const adminName = document.getElementById('admin-name');
-      const adminEmail = document.getElementById('admin-email');
       const adminLoader = document.getElementById('admin-loader');
       const adminHeader = document.getElementById('admin-header');
       const adminContent = document.getElementById('admin-content');
-      
-      if (adminName) adminName.textContent = user.displayName || user.email;
-      if (adminEmail) adminEmail.textContent = user.email;
       
       // Show admin sections
       if (adminLoader) adminLoader.style.display = 'none';
