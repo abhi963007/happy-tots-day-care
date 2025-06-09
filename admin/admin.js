@@ -326,7 +326,13 @@
       .get();
         
         if (enquiriesSnapshot.empty) {
-          enquiriesContainer.innerHTML += '<p>No submissions yet.</p>';
+          enquiriesContainer.innerHTML += `
+            <div class="empty-state">
+              <i class="fas fa-inbox"></i>
+              <h4>No submissions yet</h4>
+              <p>When users submit contact forms, they'll appear here.</p>
+            </div>
+          `;
           return;
         }
         
@@ -365,12 +371,12 @@
           
           tableHTML += `
             <tr data-id="${doc.id}">
-              <td>${date}</td>
-              <td>${data.name || 'N/A'}</td>
-              <td>${data.email || 'N/A'}</td>
-              <td>${data.childAge || 'N/A'}</td>
-              <td>${statusBadge}</td>
-              <td class="table-actions">
+              <td data-label="Date">${date}</td>
+              <td data-label="Name">${data.name || 'N/A'}</td>
+              <td data-label="Email">${data.email || 'N/A'}</td>
+              <td data-label="Child Age">${data.childAge || 'N/A'}</td>
+              <td data-label="Status">${statusBadge}</td>
+              <td data-label="Actions" class="table-actions">
                 <button class="action-btn view-btn" onclick="viewMessageDetails('${doc.id}')"><i class="fas fa-eye"></i> View</button>
                 <button class="action-btn delete-btn" onclick="deleteEnquiry('${doc.id}')"><i class="fas fa-trash"></i> Delete</button>
               </td>
