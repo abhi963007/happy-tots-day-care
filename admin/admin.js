@@ -215,7 +215,7 @@
         const enquiriesSnapshot = await db.collection(firebaseServices.collections.ENQUIRIES)
           .orderBy('createdAt', 'desc')
           .limit(20)
-          .get();
+      .get();
         
         if (enquiriesSnapshot.empty) {
           enquiriesContainer.innerHTML += '<p>No submissions yet.</p>';
@@ -225,7 +225,7 @@
         // Create table
         let tableHTML = `
           <table class="enquiries-table">
-            <thead>
+        <thead>
               <tr>
                 <th>Date</th>
                 <th>Name</th>
@@ -233,9 +233,9 @@
                 <th>Child Age</th>
                 <th>Message</th>
                 <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+          </tr>
+        </thead>
+        <tbody>
         `;
         
         // Add rows
@@ -266,10 +266,10 @@
         });
         
         tableHTML += `
-            </tbody>
-          </table>
-        `;
-        
+        </tbody>
+      </table>
+    `;
+    
         enquiriesContainer.innerHTML += tableHTML;
       } catch (error) {
         console.error('Error loading enquiries:', error);
@@ -313,8 +313,8 @@
           <div class="stat-card">
             <h3>Users</h3>
             <p class="stat-number">${usersCount}</p>
-          </div>
-        `;
+      </div>
+    `;
       } catch (error) {
         console.error('Error fetching statistics:', error);
         statsContainer.innerHTML = `<p>Error: Insufficient permissions to access statistics. 
