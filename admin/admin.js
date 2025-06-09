@@ -336,68 +336,140 @@
           return;
         }
         
-        // Create table
-        let tableHTML = `
-          <table class="enquiries-table">
-        <thead>
-              <tr>
-                <th>Date</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Child Age</th>
-                <th>Status</th>
-                <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-        `;
+        // Create content based on screen size
+        const isMobile = window.innerWidth < 992;
         
-        // Add rows
-        enquiriesSnapshot.forEach(doc => {
-          const data = doc.data();
-          let date = 'Unknown';
+        if (isMobile) {
+          // Mobile view - cards layout
+          let cardsHTML = '<div class="submission-cards">';
           
-          try {
-            date = data.createdAt && data.createdAt.toDate ? 
-                  new Date(data.createdAt.toDate()).toLocaleString() : 
-                  data.createdAt ? new Date(data.createdAt).toLocaleString() : 'Unknown';
-          } catch (e) {
-            console.warn('Error formatting date:', e);
-          }
+          enquiriesSnapshot.forEach(doc => {
+            const data = doc.data();
+            let date = 'Unknown';
+            
+            try {
+              date = data.createdAt && data.createdAt.toDate ? 
+                    new Date(data.createdAt.toDate()).toLocaleString() : 
+                    data.createdAt ? new Date(data.createdAt).toLocaleString() : 'Unknown';
+            } catch (e) {
+              console.warn('Error formatting date:', e);
+            }
+            
+            // Get or set status - default to 'new'
+            const status = data.status || 'new';
+            const statusBadge = `<span class="status-badge status-${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+            
+            cardsHTML += `
+              <div class="submission-card" data-id="${doc.id}" data-name="${data.name || ''}" data-email="${data.email || ''}" data-status="${status}">
+                <div class="card-header">
+                  <div class="card-date">${date}</div>
+                  <div class="card-status">${statusBadge}</div>
+                </div>
+                
+                <div class="card-body">
+                  <div class="card-field">
+                    <div class="field-label">Name</div>
+                    <div class="field-value">${data.name || 'N/A'}</div>
+                  </div>
+                  
+                  <div class="card-field">
+                    <div class="field-label">Email</div>
+                    <div class="field-value email-value">${data.email || 'N/A'}</div>
+                  </div>
+                  
+                  <div class="card-field">
+                    <div class="field-label">Child Age</div>
+                    <div class="field-value">${data.childAge || 'N/A'}</div>
+                  </div>
+                </div>
+                
+                <div class="card-actions">
+                  <button class="action-btn view-btn" onclick="viewMessageDetails('${doc.id}')"><i class="fas fa-eye"></i> View</button>
+                  <button class="action-btn delete-btn" onclick="deleteEnquiry('${doc.id}')"><i class="fas fa-trash"></i> Delete</button>
+                </div>
+              </div>
+            `;
+          });
           
-          // Get or set status - default to 'new'
-          const status = data.status || 'new';
-          const statusBadge = `<span class="status-badge status-${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+          cardsHTML += '</div>';
+          
+          // Add pagination
+          cardsHTML += `
+            <div class="pagination">
+              <button class="page-btn">&laquo;</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <button class="page-btn">&raquo;</button>
+            </div>
+          `;
+          
+          enquiriesContainer.innerHTML += cardsHTML;
+          
+        } else {
+          // Desktop view - table layout
+          let tableHTML = `
+            <table class="enquiries-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Child Age</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+          
+          // Add rows
+          enquiriesSnapshot.forEach(doc => {
+            const data = doc.data();
+            let date = 'Unknown';
+            
+            try {
+              date = data.createdAt && data.createdAt.toDate ? 
+                    new Date(data.createdAt.toDate()).toLocaleString() : 
+                    data.createdAt ? new Date(data.createdAt).toLocaleString() : 'Unknown';
+            } catch (e) {
+              console.warn('Error formatting date:', e);
+            }
+            
+            // Get or set status - default to 'new'
+            const status = data.status || 'new';
+            const statusBadge = `<span class="status-badge status-${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+            
+            tableHTML += `
+              <tr data-id="${doc.id}">
+                <td data-label="Date">${date}</td>
+                <td data-label="Name">${data.name || 'N/A'}</td>
+                <td data-label="Email">${data.email || 'N/A'}</td>
+                <td data-label="Child Age">${data.childAge || 'N/A'}</td>
+                <td data-label="Status">${statusBadge}</td>
+                <td data-label="Actions" class="table-actions">
+                  <button class="action-btn view-btn" onclick="viewMessageDetails('${doc.id}')"><i class="fas fa-eye"></i> View</button>
+                  <button class="action-btn delete-btn" onclick="deleteEnquiry('${doc.id}')"><i class="fas fa-trash"></i> Delete</button>
+                </td>
+              </tr>
+            `;
+          });
           
           tableHTML += `
-            <tr data-id="${doc.id}">
-              <td data-label="Date">${date}</td>
-              <td data-label="Name">${data.name || 'N/A'}</td>
-              <td data-label="Email">${data.email || 'N/A'}</td>
-              <td data-label="Child Age">${data.childAge || 'N/A'}</td>
-              <td data-label="Status">${statusBadge}</td>
-              <td data-label="Actions" class="table-actions">
-                <button class="action-btn view-btn" onclick="viewMessageDetails('${doc.id}')"><i class="fas fa-eye"></i> View</button>
-                <button class="action-btn delete-btn" onclick="deleteEnquiry('${doc.id}')"><i class="fas fa-trash"></i> Delete</button>
-              </td>
-            </tr>
+              </tbody>
+            </table>
+            
+            <div class="pagination">
+              <button class="page-btn">&laquo;</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <button class="page-btn">&raquo;</button>
+            </div>
           `;
-        });
-        
-        tableHTML += `
-        </tbody>
-      </table>
-      
-      <div class="pagination">
-        <button class="page-btn">&laquo;</button>
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <button class="page-btn">&raquo;</button>
-      </div>
-    `;
-    
-        enquiriesContainer.innerHTML += tableHTML;
+          
+          enquiriesContainer.innerHTML += tableHTML;
+        }
         
         // Add event listeners for filters
         const searchInput = document.getElementById('search-enquiries');
@@ -405,33 +477,51 @@
         const sortFilter = document.getElementById('sort-filter');
         
         if (searchInput) {
-          searchInput.addEventListener('input', filterTable);
+          searchInput.addEventListener('input', filterSubmissions);
         }
         
         if (statusFilter) {
-          statusFilter.addEventListener('change', filterTable);
+          statusFilter.addEventListener('change', filterSubmissions);
         }
         
         if (sortFilter) {
-          sortFilter.addEventListener('change', filterTable);
+          sortFilter.addEventListener('change', filterSubmissions);
         }
         
-        function filterTable() {
+        // Universal filter function that works with both tables and cards
+        function filterSubmissions() {
           const searchValue = searchInput ? searchInput.value.toLowerCase() : '';
           const statusValue = statusFilter ? statusFilter.value : 'all';
           
-          const rows = document.querySelectorAll('.enquiries-table tbody tr');
-          
-          rows.forEach(row => {
-            const name = row.cells[1].textContent.toLowerCase();
-            const email = row.cells[2].textContent.toLowerCase();
-            const statusText = row.cells[4].textContent.toLowerCase();
+          if (isMobile) {
+            // Filter cards
+            const cards = document.querySelectorAll('.submission-card');
             
-            const matchesSearch = name.includes(searchValue) || email.includes(searchValue);
-            const matchesStatus = statusValue === 'all' || statusText.toLowerCase() === statusValue;
+            cards.forEach(card => {
+              const name = card.getAttribute('data-name').toLowerCase();
+              const email = card.getAttribute('data-email').toLowerCase();
+              const status = card.getAttribute('data-status').toLowerCase();
+              
+              const matchesSearch = name.includes(searchValue) || email.includes(searchValue);
+              const matchesStatus = statusValue === 'all' || status === statusValue;
+              
+              card.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+            });
+          } else {
+            // Filter table rows
+            const rows = document.querySelectorAll('.enquiries-table tbody tr');
             
-            row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
-          });
+            rows.forEach(row => {
+              const name = row.cells[1].textContent.toLowerCase();
+              const email = row.cells[2].textContent.toLowerCase();
+              const statusText = row.cells[4].textContent.toLowerCase();
+              
+              const matchesSearch = name.includes(searchValue) || email.includes(searchValue);
+              const matchesStatus = statusValue === 'all' || statusText.toLowerCase() === statusValue;
+              
+              row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+            });
+          }
         }
         
       } catch (error) {
