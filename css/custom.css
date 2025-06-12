@@ -16,6 +16,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  width: 80% !important;
+  margin: 0 auto;
 }
 
 .block-footer-down .copyright {
@@ -68,6 +70,13 @@
   .nav-menu {
     padding: 8px 20px !important;
   }
+  .footer-cartoon-row {
+    gap: 35px;
+    padding: 30px 0 15px;
+  }
+  .footer-cartoon-row .footer-cartoon {
+    width: 55px;
+  }
 }
 
 @media screen and (max-width: 479px) {
@@ -97,4 +106,34 @@
   .footer-grid {
     grid-template-columns: 1fr !important;
   }
-} 
+}
+
+/* Footer cartoon row styling */
+.footer-cartoon-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 60px;
+  padding: 40px 0 20px;
+}
+
+.footer-cartoon-row .footer-cartoon {
+  width: 70px;
+  height: auto;
+}
+
+@media screen and (max-width: 767px) {
+  .footer-cartoon-row {
+    gap: 35px;
+    padding: 30px 0 15px;
+  }
+  .footer-cartoon-row .footer-cartoon {
+    width: 55px;
+  }
+}
+
+/* Make dashed line narrower and centered */
+.block-footer-down {
+  width: 80% !important;
+  margin: 0 auto;
+}
