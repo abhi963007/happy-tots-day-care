@@ -78,4 +78,25 @@
   .nav-menu {
     padding: 6px 15px !important;
   }
+}
+
+/* Adjust footer grid to 3 columns now that the Admin column is removed */
+.footer-grid {
+  grid-template-columns: 1.25fr 1.25fr 1fr !important;
+}
+
+/* Tablet and below: stack items into two columns (logo + links) */
+@media screen and (max-width: 991px) {
+  .footer-grid {
+    grid-template-columns: 1fr 1fr !important;
+    justify-items: center;
+    row-gap: 40px;
+  }
+}
+
+/* Mobile: stack items vertically */
+@media screen and (max-width: 479px) {
+  .footer-grid {
+    grid-template-columns: 1fr !important;
+  }
 } 
