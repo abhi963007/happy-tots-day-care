@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /js/test-firebase.js
-Disallow: /js/debug.js 
