@@ -700,63 +700,26 @@
     <script src="js/debug.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        try {
-          // Check if Firebase is initialized
-          if (typeof firebase !== 'undefined' && firebase.app) {
-            console.log('Firebase services initialized successfully');
-            
-            // Set up contact form submission if on home page
-            const contactForm = document.getElementById('wf-form-Contact-Us-Form');
-            if (contactForm) {
-              contactForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                try {
-                  const name = document.getElementById('Contact-Us-Name-2').value;
-                  const age = document.getElementById('Contact-Us-Age-2').value;
-                  const email = document.getElementById('Contact-Us-Email-2').value;
-                  const message = document.getElementById('Contact-Message-2').value;
-                  
-                  // await dataService.createDoc(firebaseServices.collections.ENQUIRIES, {
-                    name,
-                    childAge: age,
-                    email,
-                    message
-                  });
-                  
-                  // Show success message
-                  contactForm.style.display = 'none';
-                  document.querySelector('.w-form-done').style.display = 'block';
-                } catch (error) {
-                  console.error('Form submission error:', error);
-                  document.querySelector('.w-form-fail').style.display = 'block';
-                }
-              });
-            }
-            
-            // Set up newsletter form submission
-            const newsletterForm = document.getElementById('email-form');
-            if (newsletterForm) {
-              newsletterForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                try {
-                  const email = document.getElementById('name-2').value;
-                  
-                  await dataService.createDoc('newsletter', { email });
-                  
-                  // Show success message
-                  newsletterForm.style.display = 'none';
-                  newsletterForm.nextElementSibling.style.display = 'block';
-                } catch (error) {
-                  console.error('Newsletter submission error:', error);
-                  newsletterForm.nextElementSibling.nextElementSibling.style.display = 'block';
-                }
-              });
-            }
-          }
-        } catch (e) {
-          console.error('Firebase initialization error:', e);
+        // Set up contact form submission if on home page
+        const contactForm = document.getElementById('wf-form-Contact-Us-Form');
+        if (contactForm) {
+          contactForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            // Show success message without submitting to Firebase
+            contactForm.style.display = 'none';
+            document.querySelector('.w-form-done').style.display = 'block';
+          });
+        }
+
+        // Set up newsletter form submission
+        const newsletterForm = document.getElementById('email-form');
+        if (newsletterForm) {
+          newsletterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            // Show success message without submitting to Firebase
+            newsletterForm.style.display = 'none';
+            newsletterForm.nextElementSibling.style.display = 'block';
+          });
         }
       });
     </script>
