@@ -46,7 +46,16 @@
 
 /* Reduce navigation bar height while preserving logo size */
 .nav-menu {
-  padding: 10px 40px !important; /* Reduced top/bottom padding from 20px to 10px */
+  align-self: flex-start !important; /* prevent stretching to logo height */
+  min-height: 40px !important;      /* control thickness */
+  padding: 0 40px !important; /* ultra-thin bar */
+  align-items: center !important;
+  column-gap: 30px !important; /* same as grid-column-gap */
+  row-gap: 0 !important;       /* remove vertical gap */
+}
+
+/* Ensure nav-menu-wrapper stays centered */
+.nav-menu-wrapper {
   align-items: center !important;
 }
 
@@ -76,6 +85,13 @@
   }
   .footer-cartoon-row .footer-cartoon {
     width: 55px;
+  }
+  .nav-menu-wrapper {
+    align-items: flex-start !important;
+  }
+  .menu-button {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
   }
 }
 
