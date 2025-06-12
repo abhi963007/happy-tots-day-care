@@ -47,8 +47,8 @@
 /* Reduce navigation bar height while preserving logo size */
 .nav-menu {
   align-self: flex-start !important; /* prevent stretching to logo height */
-  min-height: 40px !important;      /* control thickness */
-  padding: 0 40px !important; /* ultra-thin bar */
+  min-height: 50px !important; /* slightly taller bar */
+  padding: 4px 40px !important; /* subtle vertical breathing room */
   align-items: center !important;
   column-gap: 30px !important; /* same as grid-column-gap */
   row-gap: 0 !important;       /* remove vertical gap */
@@ -68,6 +68,18 @@
 @media screen and (max-width: 991px) {
   .nav-menu {
     padding: 10px 25px !important;
+  }
+  /* Enlarge the hamburger button & center its icon */
+  .menu-button {
+    width: 56px !important;
+    height: 56px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  /* Ensure the icon inside is perfectly centered */
+  .menu-button .icon {
+    margin: 0 !important;
   }
 }
 
