@@ -48,6 +48,11 @@
   align-items: center !important;
 }
 
+/* Reduce space above the Services section */
+.services-section {
+  padding-top: 100px !important; /* Reduced from 220px */
+}
+
 /* Mobile-specific styles */
 @media screen and (max-width: 991px) {
   .nav-menu {
