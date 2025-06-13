@@ -2,7 +2,7 @@
 const WHATSAPP_API = 'https://api.whatsapp.com/send';
 
 // WhatsApp phone numbers (without +)
-const WHATSAPP_NUMBERS = ['917306364765'];
+const WHATSAPP_NUMBERS = ['917306364765', '919072783958'];
 
 // Function to send WhatsApp message
 async function sendWhatsAppMessage(phoneNumber, message) {
