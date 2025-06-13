@@ -178,3 +178,7 @@
     justify-self: center; /* ensure it is centered horizontally if extra space */
   }
 }
+
+.block-footer-down div {
+  font-weight: 700;
+}
