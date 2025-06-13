@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const childAge = formData.get('Child-Age');
             const email = formData.get('Email');
             const phone = formData.get('Phone-Number');
+            // Handle different textarea name attributes on various pages
+            const enquiryMessage = formData.get('Contact-Message') || formData.get('Contact-Message-3') || '';
             
             // Create message
             const message = `✨ New Enquiry for ${childName} ✨\n\n` +
@@ -34,7 +36,8 @@ document.addEventListener('DOMContentLoaded', function() {
                            `👶 Child Name: ${childName}\n` +
                            `👶 Child Age: ${childAge}\n` +
                            `📧 Email: ${email}\n` +
-                           `📞 Phone: ${phone}`;
+                           `📞 Phone: ${phone}` +
+                           (enquiryMessage ? `\n📝 Message: ${enquiryMessage}` : '');
             
             // Send message to all WhatsApp numbers
             WHATSAPP_NUMBERS.forEach(phone => {
