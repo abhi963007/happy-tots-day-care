@@ -28,11 +28,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const email = formData.get('Email');
             
             // Create message
-            const message = `New Contact Form Submission:\n\n` +
-                           `Parent Name: ${parentName}\n` +
-                           `Child Name: ${childName}\n` +
-                           `Child Age: ${childAge}\n` +
-                           `Email: ${email}`;
+            const message = `✨ New Enquiry for ${childName} ✨\n\n` +
+                           `👨‍👩‍👧 Parent Name: ${parentName}\n` +
+                           `👶 Child Name: ${childName}\n` +
+                           `👶 Child Age: ${childAge}\n` +
+                           `📧 Email: ${email}`;
             
             // Send message to all WhatsApp numbers
             WHATSAPP_NUMBERS.forEach(phone => {
