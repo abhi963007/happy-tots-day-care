@@ -22,14 +22,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Get form data
             const formData = new FormData(form);
-            const name = formData.get('Contact-Us-Name');
-            const age = formData.get('Contact-Us-Age');
-            const email = formData.get('Contact-Us-Email');
+            const parentName = formData.get('Parent-Name');
+            const childName = formData.get('Child-Name');
+            const childAge = formData.get('Child-Age');
+            const email = formData.get('Email');
             
             // Create message
             const message = `New Contact Form Submission:\n\n` +
-                           `Name: ${name}\n` +
-                           `Child Age: ${age}\n` +
+                           `Parent Name: ${parentName}\n` +
+                           `Child Name: ${childName}\n` +
+                           `Child Age: ${childAge}\n` +
                            `Email: ${email}`;
             
             // Send message to all WhatsApp numbers
