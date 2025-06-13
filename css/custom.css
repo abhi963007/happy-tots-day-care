@@ -165,3 +165,11 @@
   width: 80% !important;
   margin: 0 auto;
 }
+
+/* Center 'Emergency Medical Services' card under Full Attention on desktop */
+@media screen and (min-width: 992px) {
+  .services-grid .center-desktop {
+    grid-column: 2; /* place in middle column */
+    justify-self: center; /* ensure it is centered horizontally if extra space */
+  }
+}
